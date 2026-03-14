@@ -1,0 +1,56 @@
+version: "3.8"
+
+services:
+  shlink:
+    image: shlinkio/shlink:4
+    environment:
+      # Timezone
+      - TZ=${TZ:-America/Sao_Paulo}
+      # Dominio e HTTPS
+      - DEFAULT_DOMAIN=${SHLINK_DEFAULT_DOMAIN:-short.i92tecnologia.com.br}
+      - IS_HTTPS_ENABLED=${SHLINK_IS_HTTPS_ENABLED:-true}
+      # Proxy reverso
+      - TRUSTED_PROXIES=${SHLINK_TRUSTED_PROXIES:-*}
+      # Banco de dados PostgreSQL externo
+      - DB_DRIVER=${SHLINK_DB_DRIVER:-postgres}
+      - DB_HOST=${SHLINK_DB_HOST}
+      - DB_PORT=${SHLINK_DB_PORT:-5432}
+      - DB_NAME=${SHLINK_DB_NAME:-shlink}
+      - DB_USER=${SHLINK_DB_USER}
+      - DB_PASSWORD=${SHLINK_DB_PASSWORD}
+      # API Key inicial (gerada no primeiro boot)
+      - INITIAL_API_KEY=${SHLINK_INITIAL_API_KEY}
+      # GeoLite2 (opcional, para geolocalização de cliques)
+      - GEOLITE_LICENSE_KEY=${SHLINK_GEOLITE_LICENSE_KEY:-}
+    networks:
+      - network_swarm_public
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 5
+        window: 120s
+      # Labels do Traefik como referência.
+      # NOTA: No Dokploy, o roteamento é feito via file provider do Traefik,
+      # configurado automaticamente pelo Dokploy UI ao adicionar o domínio.
+      # Estas labels servem como documentação da configuração esperada.
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.shlink.rule=Host(`short.i92tecnologia.com.br`)
+        - traefik.http.routers.shlink.entrypoints=websecure
+        - traefik.http.routers.shlink.tls=true
+        - traefik.http.routers.shlink.tls.certresolver=letsencryptresolver
+        - traefik.http.routers.shlink.service=shlink
+        - traefik.http.services.shlink.loadbalancer.server.port=8080
+        - traefik.docker.network=network_swarm_public
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/rest/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+networks:
+  network_swarm_public:
+    external: true

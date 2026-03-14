@@ -1,0 +1,20 @@
+# Arquivo de variáveis reais (contém segredos)
+.env
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Arquivos de prompt/instrução (não fazem parte do projeto)
+como esta minha infra.md
+prompt_inicial.md
+
+# Docker
+docker-compose.override.yml
